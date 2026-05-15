@@ -79,7 +79,7 @@ export class NotionClient {
     if (this.config.notion.provider === "mcp") {
       await this.mcpJson("notion-create-comment", {
         page_id: pageId,
-        rich_text: [text.slice(0, 1900)]
+        rich_text: [{ type: "text", text: { content: text.slice(0, 1900) } }]
       });
       return;
     }

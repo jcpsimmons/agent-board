@@ -1,4 +1,5 @@
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import crypto from "node:crypto";
 import { AgentBoardConfig, Status, Ticket, WorkerFinal } from "./types.js";
 import { NotionClient } from "./notion.js";
@@ -95,7 +96,7 @@ export class Dispatcher {
     const finalOutputPath = path.join(defaultStateDir(), "runs", runId, "final.json");
     const prompt = buildCodePrompt(ticket, worktree);
     const result = await runAgent({ runner, cwd: worktree.worktreePath, prompt, ticket, finalOutputPath });
-    return this.applyWorkerResult(ticket, runId, result.final, result.exitCode);
+    return this.applyWorkerResult(ticket, runId, result.final, result.exitCode, result.stderr || result.stdout);
   }
 
   private async executeResearchTicket(ticket: Ticket, runId: string): Promise<TickResult> {
@@ -104,7 +105,7 @@ export class Dispatcher {
     const gatheredContext = await gatherResearchContext(this.config, ticket);
     const prompt = buildResearchPrompt(ticket, this.config, gatheredContext);
     const result = await runAgent({ runner, cwd: process.cwd(), prompt, ticket, finalOutputPath });
-    return this.applyWorkerResult(ticket, runId, result.final, result.exitCode);
+    return this.applyWorkerResult(ticket, runId, result.final, result.exitCode, result.stderr || result.stdout);
   }
 
   private async executeSplitTicket(ticket: Ticket, runId: string): Promise<TickResult> {
@@ -118,31 +119,37 @@ export class Dispatcher {
         await this.notion.createChildTicket(child, ticket.id);
       }
     }
-    return this.applyWorkerResult(ticket, runId, final, result.exitCode);
+    return this.applyWorkerResult(ticket, runId, final, result.exitCode, result.stderr || result.stdout);
   }
 
   private async applyWorkerResult(
     ticket: Ticket,
     runId: string,
     final: WorkerFinal | undefined,
-    exitCode: number
+    exitCode: number,
+    diagnostics = ""
   ): Promise<TickResult> {
     if (!final) {
       const status: Status = exitCode === 0 ? "Review" : "Failed";
       const summary = exitCode === 0
         ? "Worker exited without a structured final response."
-        : `Worker exited with code ${exitCode} and no structured final response.`;
+        : `Worker exited with code ${exitCode} and no structured final response. ${diagnostics.slice(0, 500)}`.trim();
       await this.notion.updateResult(ticket.id, { status, summary, runId });
       return { action: status === "Failed" ? "failed" : "completed", message: summary, ticket: summarizeTicket(ticket), status };
     }
 
     const status = mapWorkerStatus(final.status);
+    if (!status) {
+      const summary = `Worker returned an unrecognized status: ${String(final.status)}`;
+      await this.notion.updateResult(ticket.id, { status: "Failed", summary, runId });
+      return { action: "failed", message: summary, ticket: summarizeTicket(ticket), status: "Failed" };
+    }
     const summary = final.summary || final.question || final.blocker || "Worker completed.";
     await this.notion.updateResult(ticket.id, {
       status,
       summary,
       prUrl: final.prUrl,
-      outputUrl: final.outputUrl,
+      outputUrl: normalizeOutputUrl(final.outputUrl),
       runId
     });
 
@@ -174,7 +181,7 @@ export class Dispatcher {
   }
 }
 
-function mapWorkerStatus(status: WorkerFinal["status"]): Status {
+function mapWorkerStatus(status: WorkerFinal["status"] | undefined): Status | undefined {
   switch (status) {
     case "done":
       return "Done";
@@ -188,6 +195,8 @@ function mapWorkerStatus(status: WorkerFinal["status"]): Status {
       return "Blocked";
     case "failed":
       return "Failed";
+    default:
+      return undefined;
   }
 }
 
@@ -198,4 +207,14 @@ function summarizeTicket(ticket: Ticket): Pick<Ticket, "id" | "title" | "taskTyp
 function makeRunId(ticket: Ticket): string {
   const hash = crypto.createHash("sha1").update(`${ticket.id}:${Date.now()}`).digest("hex").slice(0, 10);
   return `run-${new Date().toISOString().replace(/[:.]/g, "-")}-${hash}`;
+}
+
+function normalizeOutputUrl(value?: string): string | undefined {
+  if (!value) return undefined;
+  try {
+    return new URL(value).href;
+  } catch {
+    const artifactPath = path.isAbsolute(value) ? value : path.resolve(process.cwd(), value);
+    return pathToFileURL(artifactPath).href;
+  }
 }

@@ -7,6 +7,7 @@ export interface RunCommandOptions {
   cwd?: string;
   input?: string;
   env?: NodeJS.ProcessEnv;
+  timeoutMs?: number;
 }
 
 export async function runCommand(
@@ -23,6 +24,18 @@ export async function runCommand(
 
     let stdout = "";
     let stderr = "";
+    let timedOut = false;
+    let forceKillTimer: NodeJS.Timeout | undefined;
+
+    const timeout = options.timeoutMs
+      ? setTimeout(() => {
+        timedOut = true;
+        child.kill("SIGTERM");
+        forceKillTimer = setTimeout(() => child.kill("SIGKILL"), 5000);
+        forceKillTimer.unref();
+      }, options.timeoutMs)
+      : undefined;
+    timeout?.unref();
 
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
@@ -34,6 +47,14 @@ export async function runCommand(
     });
     child.on("error", reject);
     child.on("close", (code) => {
+      if (timeout) clearTimeout(timeout);
+      if (forceKillTimer) clearTimeout(forceKillTimer);
+      if (timedOut) {
+        const seconds = Math.round((options.timeoutMs ?? 0) / 1000);
+        const timeoutMessage = `Command timed out after ${seconds}s.`;
+        resolve({ code: 124, stdout, stderr: [stderr.trimEnd(), timeoutMessage].filter(Boolean).join("\n") });
+        return;
+      }
       resolve({ code: code ?? 1, stdout, stderr });
     });
 

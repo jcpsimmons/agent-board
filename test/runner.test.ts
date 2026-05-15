@@ -26,6 +26,7 @@ describe("runner helpers", () => {
     expect(command.args).toContain("exec");
     expect(command.args).toContain("--json");
     expect(command.args).toContain("-C");
+    expect(command.args).toContain("--skip-git-repo-check");
     expect(command.input).toBe("Do work");
   });
 
@@ -51,5 +52,37 @@ describe("runner helpers", () => {
     fs.rmSync(finalPath);
     const stdout = `{"type":"event"}\n{"status":"blocked","summary":"blocked","blocker":"auth"}`;
     expect(parseFinalOutput(finalPath, stdout)).toMatchObject({ status: "blocked", blocker: "auth" });
+  });
+
+  it("ignores generic runner events when parsing final output", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "agent-board-"));
+    const finalPath = path.join(dir, "final.json");
+    const stdout = [
+      JSON.stringify({ type: "thread.started", thread_id: "abc" }),
+      JSON.stringify({ type: "item.completed", item: { type: "file_change", status: "completed" } })
+    ].join("\n");
+
+    expect(parseFinalOutput(finalPath, stdout)).toBeUndefined();
+  });
+
+  it("extracts final JSON from nested runner messages", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "agent-board-"));
+    const finalPath = path.join(dir, "final.json");
+    const stdout = [
+      JSON.stringify({ type: "item.completed", item: { type: "file_change", status: "completed" } }),
+      JSON.stringify({
+        type: "item.completed",
+        item: {
+          type: "agent_message",
+          text: "```json\n{\"status\":\"review\",\"summary\":\"created doc\",\"outputUrl\":\".agent-board/doc.md\"}\n```"
+        }
+      })
+    ].join("\n");
+
+    expect(parseFinalOutput(finalPath, stdout)).toMatchObject({
+      status: "review",
+      summary: "created doc",
+      outputUrl: ".agent-board/doc.md"
+    });
   });
 });
