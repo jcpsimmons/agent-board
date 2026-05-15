@@ -1,0 +1,33 @@
+{
+  "notion": {
+    "boardTitle": "Agent Board",
+    "parentPageId": "replace-with-parent-page-id",
+    "dataSourceId": "replace-after-init-board"
+  },
+  "defaults": {
+    "runner": "codex",
+    "priority": 3
+  },
+  "repos": {
+    "searchRoots": ["~/code", "~/src", "~/Developer"],
+    "aliases": {
+      "example": "~/code/example"
+    },
+    "worktreeRoot": "~/.cache/agent-board/worktrees"
+  },
+  "sources": {
+    "notion": true,
+    "slack": true,
+    "granola": true,
+    "linear": true,
+    "github": true
+  },
+  "skills": {
+    "mode": "copy"
+  },
+  "launchAgent": {
+    "enabled": true,
+    "intervalSeconds": 60,
+    "label": "com.agent-board.dispatcher"
+  }
+}

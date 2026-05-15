@@ -1,0 +1,31 @@
+{
+  "name": "agent-board",
+  "version": "0.1.0",
+  "description": "A Notion-backed dispatch board for local Codex and Claude Code agents.",
+  "type": "module",
+  "bin": {
+    "agent-board": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "examples",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"require('fs').chmodSync('dist/cli.js', 0o755)\"",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/cli.ts",
+    "prepare": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
+  }
+}
