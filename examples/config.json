@@ -1,8 +1,12 @@
 {
   "notion": {
+    "provider": "ntn",
     "boardTitle": "Agent Board",
     "parentPageId": "replace-with-parent-page-id",
-    "dataSourceId": "replace-after-init-board"
+    "dataSourceId": "replace-after-init-board",
+    "viewUrl": "replace-with-view-url-for-mcp-provider",
+    "mcpServerUrl": "https://mcp.notion.com/mcp",
+    "mcpCallPath": "~/.openclaw/workspace/scripts/mcp-call.mjs"
   },
   "defaults": {
     "runner": "codex",

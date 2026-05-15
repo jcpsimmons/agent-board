@@ -6,7 +6,10 @@ import { defaultConfigPath, defaultStateDir, expandHome } from "./paths.js";
 
 export const DEFAULT_CONFIG: AgentBoardConfig = {
   notion: {
-    boardTitle: "Agent Board"
+    provider: "ntn",
+    boardTitle: "Agent Board",
+    mcpServerUrl: "https://mcp.notion.com/mcp",
+    mcpCallPath: "~/.openclaw/workspace/scripts/mcp-call.mjs"
   },
   defaults: {
     runner: "codex",
@@ -41,6 +44,10 @@ export function resolveConfigPath(configPath?: string): string {
 export function normalizeConfig(config: AgentBoardConfig): AgentBoardConfig {
   return {
     ...config,
+    notion: {
+      ...config.notion,
+      mcpCallPath: config.notion.mcpCallPath ? expandHome(config.notion.mcpCallPath) : undefined
+    },
     repos: {
       ...config.repos,
       searchRoots: config.repos.searchRoots.map(expandHome),

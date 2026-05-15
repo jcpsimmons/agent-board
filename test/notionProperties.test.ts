@@ -30,14 +30,14 @@ describe("notion property helpers", () => {
   });
 
   it("builds status and child ticket properties", () => {
-    expect(statusProperty("Running")).toEqual({ status: { name: "Running" } });
+    expect(statusProperty("Running")).toEqual({ select: { name: "Running" } });
     expect(childTicketProperties({
       title: "Child",
       prompt: "Do the child work",
       taskType: "Research Doc"
     }, "parent-1")).toMatchObject({
       Title: { title: [{ text: { content: "Child" } }] },
-      Status: { status: { name: "Ready" } },
+      Status: { select: { name: "Ready" } },
       "Task Type": { select: { name: "Research Doc" } },
       Parent: { relation: [{ id: "parent-1" }] }
     });

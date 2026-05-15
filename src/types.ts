@@ -19,10 +19,14 @@ export type RunnerName = (typeof RUNNERS)[number];
 
 export interface AgentBoardConfig {
   notion: {
+    provider?: "ntn" | "mcp";
     dataSourceId?: string;
     databaseId?: string;
+    viewUrl?: string;
     parentPageId?: string;
     boardTitle: string;
+    mcpServerUrl?: string;
+    mcpCallPath?: string;
   };
   defaults: {
     runner: RunnerName;

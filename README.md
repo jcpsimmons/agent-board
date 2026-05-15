@@ -77,6 +77,15 @@ Task types:
 Code, Research Doc, Plan/Split
 ```
 
+## Notion providers
+
+Agent Board supports two Notion access modes:
+
+- `ntn`: uses the Notion public API through the `ntn` CLI.
+- `mcp`: uses a local MCP bridge such as `~/.openclaw/workspace/scripts/mcp-call.mjs`.
+
+Use `mcp` when your Notion connector has access to pages/databases that the public API token cannot reach. MCP-backed boards should set both `dataSourceId` and `viewUrl`; the dispatcher queries the configured view and filters rows locally.
+
 ## Code tickets
 
 For code work, Agent Board infers the repo from:

@@ -40,7 +40,7 @@ export function inferTaskType(text: string): TaskType | undefined {
 }
 
 export function statusProperty(status: Status): Record<string, unknown> {
-  return { status: { name: status } };
+  return { select: { name: status } };
 }
 
 export function selectProperty(name: string): Record<string, unknown> {
@@ -85,6 +85,7 @@ export function childTicketProperties(child: ChildTicket, parentId?: string): Re
 }
 
 function getTextProperty(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
   if (!value || typeof value !== "object") return undefined;
   const candidate = value as Record<string, unknown>;
   if (typeof candidate.plain_text === "string") return candidate.plain_text;
@@ -112,6 +113,7 @@ function getTextProperty(value: unknown): string | undefined {
 }
 
 function getNameProperty(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
   if (!value || typeof value !== "object") return undefined;
   const candidate = value as Record<string, unknown>;
   for (const key of ["status", "select"]) {
@@ -125,6 +127,7 @@ function getNameProperty(value: unknown): string | undefined {
 }
 
 function getNumberProperty(value: unknown): number | undefined {
+  if (typeof value === "number") return value;
   if (!value || typeof value !== "object") return undefined;
   const candidate = value as Record<string, unknown>;
   return typeof candidate.number === "number" ? candidate.number : undefined;
